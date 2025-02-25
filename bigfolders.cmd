@@ -27,32 +27,40 @@ if exist "%TEMP_FILE%" del "%TEMP_FILE%"
 
 REM Scan directories and calculate sizes
 echo Scanning %DRIVE% for large folders...
-for /f "delims=" %%D in ('dir "%DRIVE%\" /ad /s /b') do (
+for /d %%T in ("%DRIVE%\*") do (
     set "skip="
-    set "FOLDER=%%~nxD" REM Get folder name only (without full path for exclusion check)
-    
-    REM Check if the folder should be excluded
+    set "TOPFOLDER=%%~nxT"
+    REM Check if top-level folder should be excluded
     for %%E in (%exclude%) do (
-        if /i "!FOLDER!"=="%%E" set "skip=1"
+        if /i "!TOPFOLDER!"=="%%E" set "skip=1"
     )
-    
-    REM Process folder if not excluded
     if not defined skip (
-        echo Evaluating folder: %%D
-        set "SIZE=0"
-        REM Calculate folder size using dir
-        for /f "tokens=3" %%S in ('dir "%%D" /s ^| find "File(s)"') do (
-            set "SIZE=%%S"
-            REM Remove commas from size
-            set "SIZE=!SIZE:,=!"
-        )
-        REM Check if size exceeds 1GB
-        if !SIZE! GTR %MIN_SIZE% (
-            set "SIZE_GB=!SIZE:~0,-9!.!SIZE:~-9,-7!"
-            if "!SIZE_GB:~0,1!"=="." set "SIZE_GB=0!SIZE_GB!"
-            echo Folder: %%D >> "%TEMP_FILE%"
-            echo Size: !SIZE_GB! GB (!SIZE! bytes) >> "%TEMP_FILE%"
-            echo ---------------------------------------- >> "%TEMP_FILE%"
+        echo Processing top-level folder: %%T
+        REM Scan subdirectories of this top-level folder
+        for /f "delims=" %%D in ('dir "%%T" /ad /s /b 2^>nul') do (
+            set "SUBFOLDER=%%~nxD"
+            set "skip_sub="
+            REM Check if subfolder should be excluded
+            for %%E in (%exclude%) do (
+                if /i "!SUBFOLDER!"=="%%E" set "skip_sub=1"
+            )
+            if not defined skip_sub (
+                echo Evaluating folder: %%D
+                set "SIZE=0"
+                REM Calculate folder size, redirect errors to nul
+                for /f "tokens=3" %%S in ('dir "%%D" /s ^| find "File(s)" 2^>nul') do (
+                    set "SIZE=%%S"
+                    set "SIZE=!SIZE:,=!"
+                )
+                REM Check if size exceeds 1GB
+                if !SIZE! GTR %MIN_SIZE% (
+                    set "SIZE_GB=!SIZE:~0,-9!.!SIZE:~-9,-7!"
+                    if "!SIZE_GB:~0,1!"=="." set "SIZE_GB=0!SIZE_GB!"
+                    echo Folder: %%D >> "%TEMP_FILE%"
+                    echo Size: !SIZE_GB! GB (!SIZE! bytes) >> "%TEMP_FILE%"
+                    echo ---------------------------------------- >> "%TEMP_FILE%"
+                )
+            )
         )
     )
 )
