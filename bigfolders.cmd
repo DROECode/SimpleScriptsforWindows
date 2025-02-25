@@ -5,7 +5,7 @@ REM Set variables
 set "DRIVE=C:"
 set "OUTPUT_FILE=C:\LargeFoldersReport_%date:~10,4%-%date:~4,2%-%date:~7,2%_%time:~0,2%%time:~3,2%.txt"
 set "MIN_SIZE=1073741824" REM 1GB in bytes
-set "exclude=Windows System32 SysWOW64 Program Files Program Files (x86) $Recycle.Bin"
+set "exclude=Windows System32 SysWOW64 "Program Files" "Program Files (x86)" "$Recycle.Bin""
 
 REM Create report header
 echo Large Folders Report (1GB or higher) - Generated on %date% %time% > "%OUTPUT_FILE%"
@@ -32,7 +32,7 @@ for /d %%T in ("%DRIVE%\*") do (
     set "TOPFOLDER=%%~nxT"
     REM Check if top-level folder should be excluded
     for %%E in (%exclude%) do (
-        if /i "!TOPFOLDER!"=="%%E" set "skip=1"
+        if /i "!TOPFOLDER!"=="%%~E" set "skip=1"
     )
     if not defined skip (
         echo Processing top-level folder: %%T
@@ -42,7 +42,7 @@ for /d %%T in ("%DRIVE%\*") do (
             set "skip_sub="
             REM Check if subfolder should be excluded
             for %%E in (%exclude%) do (
-                if /i "!SUBFOLDER!"=="%%E" set "skip_sub=1"
+                if /i "!SUBFOLDER!"=="%%~E" set "skip_sub=1"
             )
             if not defined skip_sub (
                 echo Evaluating folder: %%D
